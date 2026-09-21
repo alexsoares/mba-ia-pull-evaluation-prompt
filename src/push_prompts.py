@@ -7,43 +7,20 @@ Este script:
 3. Faz push PÚBLICO para o LangSmith Hub
 4. Adiciona metadados (tags, descrição, técnicas utilizadas)
 
-DICAS DE IMPLEMENTAÇÃO:
-
-- O push é feito pelo cliente do LangSmith:
-
-      from langsmith import Client
-      from langchain_core.prompts import ChatPromptTemplate
-
-      client = Client()
-      prompt = ChatPromptTemplate.from_messages([
-          ("system", system_prompt),
-          ("user", user_prompt),
-      ])
-      url = client.push_prompt(
-          f"{username}/bug_to_user_story_v2",
-          object=prompt,
-          is_public=True,
-          description="...",
-          tags=[...],
-      )
-
-- `username` vem de USERNAME_LANGSMITH_HUB no .env e precisa ser o seu handle
-  do Hub. Se você ainda não tem um handle, veja as instruções no .env.example.
-
-- A variável do template precisa ser {bug_report}, que é a chave de entrada
-  usada no dataset de avaliação.
-
-- Use `load_yaml` de utils.py para ler o arquivo .yml.
+SIMPLIFICADO: Código mais limpo e direto ao ponto.
 """
 
 import os
 import sys
 from dotenv import load_dotenv
-from langsmith import Client
+from langchain import hub
 from langchain_core.prompts import ChatPromptTemplate
-from utils import load_yaml, check_env_vars, print_section_header
+from utils import load_yaml, check_env_vars, print_section_header, validate_prompt_structure
 
 load_dotenv()
+
+INPUT_PATH = "prompts/bug_to_user_story_v2.yml"
+LOCAL_KEY = "bug_to_user_story_v2"
 
 
 def push_prompt_to_langsmith(prompt_name: str, prompt_data: dict) -> bool:
@@ -51,13 +28,47 @@ def push_prompt_to_langsmith(prompt_name: str, prompt_data: dict) -> bool:
     Faz push do prompt otimizado para o LangSmith Hub (PÚBLICO).
 
     Args:
-        prompt_name: Nome do prompt
+        prompt_name: Nome do prompt (formato "{username}/bug_to_user_story_v2")
         prompt_data: Dados do prompt
 
     Returns:
         True se sucesso, False caso contrário
     """
-    ...
+    try:
+        system_prompt = prompt_data.get("system_prompt", "")
+        user_prompt = prompt_data.get("user_prompt", "{bug_report}")
+
+        prompt_template = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("human", user_prompt),
+        ])
+
+        description = prompt_data.get("description", "")
+        tags = list(prompt_data.get("tags", []))
+        techniques = prompt_data.get("techniques_applied", [])
+
+        readme_lines = [f"# {prompt_name}", "", description, "", "## Técnicas de Prompt Engineering aplicadas"]
+        readme_lines += [f"- {technique}" for technique in techniques]
+        readme = "\n".join(readme_lines)
+
+        print(f"   Publicando '{prompt_name}' (público)...")
+        hub.push(
+            prompt_name,
+            prompt_template,
+            new_repo_description=description,
+            new_repo_is_public=True,
+            tags=tags,
+            readme=readme,
+        )
+
+        print(f"   ✓ Push concluído")
+        print(f"   Tags: {tags}")
+        print(f"   Técnicas: {', '.join(techniques) if techniques else 'nenhuma listada'}")
+        return True
+
+    except Exception as e:
+        print(f"   ❌ Erro ao fazer push do prompt '{prompt_name}': {e}")
+        return False
 
 
 def validate_prompt(prompt_data: dict) -> tuple[bool, list]:
@@ -70,12 +81,49 @@ def validate_prompt(prompt_data: dict) -> tuple[bool, list]:
     Returns:
         (is_valid, errors) - Tupla com status e lista de erros
     """
-    ...
+    return validate_prompt_structure(prompt_data)
 
 
 def main():
     """Função principal"""
-    ...
+    print_section_header("PUSH DE PROMPTS OTIMIZADOS PARA O LANGSMITH HUB")
+
+    required_vars = ["LANGSMITH_API_KEY", "USERNAME_LANGSMITH_HUB"]
+    if not check_env_vars(required_vars):
+        return 1
+
+    username = os.getenv("USERNAME_LANGSMITH_HUB")
+
+    data = load_yaml(INPUT_PATH)
+    if not data:
+        return 1
+
+    prompt_data = data.get(LOCAL_KEY)
+    if not prompt_data:
+        print(f"❌ Chave '{LOCAL_KEY}' não encontrada em {INPUT_PATH}")
+        return 1
+
+    print(f"Validando prompt '{LOCAL_KEY}'...")
+    is_valid, errors = validate_prompt(prompt_data)
+
+    if not is_valid:
+        print("❌ Prompt inválido:")
+        for error in errors:
+            print(f"   - {error}")
+        return 1
+
+    print("   ✓ Prompt válido\n")
+
+    prompt_name = f"{username}/bug_to_user_story_v2"
+    success = push_prompt_to_langsmith(prompt_name, prompt_data)
+
+    if success:
+        print(f"\n✅ Prompt publicado com sucesso!")
+        print(f"   Confira em: https://smith.langchain.com/prompts")
+        print(f"\nPróximo passo: python src/evaluate.py")
+        return 0
+
+    return 1
 
 
 if __name__ == "__main__":
