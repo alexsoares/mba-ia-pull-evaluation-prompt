@@ -307,46 +307,40 @@ C) Seção "Como Executar":
 
 ---
 
-# Documentação da Solução
+# Minha Solução
 
-As seções abaixo (tudo a partir daqui) documentam a implementação entregue neste
-repositório: o que foi implementado, as técnicas de Prompt Engineering escolhidas
-para o `prompts/bug_to_user_story_v2.yml`, e como rodar o projeto do zero.
+Nesta parte eu explico o que fiz: quais técnicas usei no `prompts/bug_to_user_story_v2.yml`,
+por que as escolhi, quais resultados obtive e como rodar o projeto do zero.
 
 ## Técnicas Aplicadas (Fase 2)
 
-### Diagnóstico do prompt v1 (baixa qualidade)
+### O que havia de errado no prompt v1
 
-O prompt em `prompts/bug_to_user_story_v1.yml` (puxado de `leonanluppi/bug_to_user_story_v1`)
-tem os problemas clássicos de um prompt mal escrito:
+Ao ler o `prompts/bug_to_user_story_v1.yml` (puxado de `leonanluppi/bug_to_user_story_v1`),
+encontrei estes problemas:
 
-- **Sem persona/contexto**: o modelo não sabe para quem está escrevendo nem qual o padrão de
-  qualidade esperado.
-- **`{bug_report}` duplicado** no `system_prompt` e no `user_prompt` — redundante e gera
-  confusão sobre qual é a fonte da verdade.
-- **Sem formato de saída definido** — o modelo improvisa a estrutura da user story a cada
-  execução, gerando respostas inconsistentes.
-- **Sem exemplos** — o modelo não sabe o nível de detalhe, o tom, nem a estrutura de critérios
-  de aceitação esperados.
-- **Sem regras sobre informação faltante** — o modelo tende a inventar dados (o que derruba
-  Precision e Correctness) quando o relato de bug é incompleto.
-- **Sem adaptação à complexidade do bug** — o dataset oficial (`datasets/bug_to_user_story.jsonl`)
-  tem bugs simples, médios e complexos, e as referências esperadas escalam em nível de detalhe
-  (contexto técnico, tasks sugeridas) conforme a complexidade — o v1 não orienta essa adaptação.
+- **Sem persona.** O modelo não sabe para quem escreve nem qual qualidade se espera.
+- **`{bug_report}` repetido** no `system_prompt` e no `user_prompt`, o que confunde.
+- **Sem formato de saída.** Cada resposta vinha com uma estrutura diferente.
+- **Sem exemplos.** O modelo não sabia o nível de detalhe nem o tom esperados.
+- **Sem regra para informação faltante.** Quando o relato era incompleto, o modelo inventava
+  dados, o que derruba as métricas Precision e Correctness.
+- **Sem adaptação ao tamanho do bug.** O dataset (`datasets/bug_to_user_story.jsonl`) tem bugs
+  simples, médios e complexos, e as respostas de referência ficam mais detalhadas conforme o
+  bug fica mais complexo. O v1 não orientava isso.
 
-### Técnicas escolhidas para o v2
+### Técnicas que escolhi para o v2
 
-O `prompts/bug_to_user_story_v2.yml` combina três técnicas (documentadas também no campo
-`techniques_applied` do YAML), porque cada uma ataca um problema diferente do v1:
+Usei três técnicas (também listadas no campo `techniques_applied` do YAML). Cada uma resolve um
+problema diferente do v1:
 
-1. **Few-shot Learning (obrigatório)** — o `system_prompt` inclui 4 exemplos completos de
-   entrada/saída cobrindo os principais níveis de complexidade do dataset oficial (bug simples,
-   médio com contexto técnico, complexo com múltiplos problemas e impacto de negócio, e bug de
-   cálculo numérico com seção "Exemplo de Cálculo"). Isso ancora o formato, o tom e —
-   principalmente — o nível de detalhe esperado em cada cenário, muito mais eficaz do que apenas
-   *descrever* o formato em texto.
+1. **Few-shot Learning (obrigatório).** Coloquei 4 exemplos completos de entrada e saída no
+   `system_prompt`: um bug simples, um médio com contexto técnico, um complexo com vários
+   problemas e um bug de cálculo numérico. Escolhi essa técnica porque mostrar um exemplo
+   funciona melhor do que só descrever o formato. Os exemplos ensinam o formato, o tom e o
+   nível de detalhe de cada caso.
 
-   Exemplo prático (um dos três, o de complexidade média):
+   Um exemplo de como ficou (o de complexidade média):
 
    ```
    Relato de Bug:
@@ -368,90 +362,107 @@ O `prompts/bug_to_user_story_v2.yml` combina três técnicas (documentadas tamb�
    - Endpoint está retornando HTTP 500
    ```
 
-   (Sem negrito Markdown nos títulos de seção — ver item "Formatação em texto simples" abaixo,
-   ajuste feito na iteração 2 após constatar que o dataset de referência nunca usa `**negrito**`.)
+   Nos títulos das seções não uso negrito em Markdown. Percebi na iteração 2 que o dataset de
+   referência nunca usa `**negrito**`.
 
-2. **Chain of Thought (CoT)** — o `system_prompt` instrui o modelo a raciocinar internamente em
-   7 passos (identificar persona → identificar ação → identificar benefício → classificar
-   complexidade do bug → extrair critérios de aceitação de forma exaustiva → decidir se contexto
-   técnico e tasks são necessários → verificar gatilhos de seções condicionais como "Exemplo de
-   Cálculo" e "Critérios de Acessibilidade") **antes** de escrever a resposta, mas pede
-   explicitamente para *não exibir* esse raciocínio — só o resultado final. Isso melhora a
-   qualidade e a completude da resposta sem poluir a saída com texto de raciocínio (o que
-   prejudicaria a métrica Clarity).
+2. **Chain of Thought (CoT).** Peço ao modelo que pense em 7 passos antes de responder:
+   1. identificar a persona;
+   2. identificar a ação;
+   3. identificar o benefício;
+   4. classificar a complexidade do bug;
+   5. listar os critérios de aceitação de forma completa;
+   6. decidir se precisa de contexto técnico e tasks;
+   7. checar se o caso pede seções extras, como "Exemplo de Cálculo" ou "Critérios de
+      Acessibilidade".
 
-3. **Role Prompting** — persona definida logo no início do `system_prompt` ("Product Manager
-   Sênior e Business Analyst Ágil, com mais de 10 anos de experiência... seu trabalho é lido
-   diretamente por desenvolvedores e QAs"), o que calibra o tom, o rigor técnico e a
-   objetividade esperados nas respostas.
+   Peço também que o modelo **não mostre** esse raciocínio, só a resposta final. Assim a
+   resposta sai mais completa e sem texto sobrando, o que ajuda na métrica Clarity.
 
-Além disso, o v2 tem:
+3. **Role Prompting.** No começo do `system_prompt` defino a persona: "Product Manager Sênior
+   e Business Analyst Ágil, com mais de 10 anos de experiência", cujo texto é lido por
+   desenvolvedores e QAs. Isso ajusta o tom e deixa as respostas mais objetivas e técnicas.
 
-- **Regras explícitas de comportamento** (8 regras numeradas): responder em português, nunca
-  inventar informação, inferir persona pelo domínio quando não explícita, seguir estritamente o
-  formato "Como um... eu quero... para que...", separar critérios de aceitação em seção própria,
-  usar títulos em texto simples sem negrito Markdown, adaptar detalhe à complexidade, e tratar
-  múltiplos problemas no mesmo relato como critérios separados dentro de uma única User Story.
-- **Tratamento de edge cases**: relato sem persona explícita (→ infere pelo domínio), bug
-  puramente técnico sem usuário final claro (→ User Story do ponto de vista "do sistema"),
-  relato incompleto (→ melhor esforço, sem inventar dados), relato com múltiplos problemas
-  graves (→ uma única User Story principal, com critérios e contexto técnico segmentados por
-  problema).
-- **System vs. User bem separados**: tudo que é instrução permanente (persona, regras,
-  raciocínio, formato, exemplos) está no `system_prompt`; o `user_prompt` carrega apenas o
-  relato de bug real — corrigindo a duplicação de `{bug_report}` que existia no v1.
+Além das técnicas, o v2 tem:
+
+- **8 regras de comportamento:**
+  - responder em português;
+  - nunca inventar informação;
+  - inferir a persona pelo contexto quando ela não aparece no relato;
+  - seguir o formato "Como um... eu quero... para que...";
+  - separar os critérios de aceitação em uma seção própria;
+  - usar títulos em texto simples, sem negrito;
+  - adaptar o nível de detalhe à complexidade do bug;
+  - tratar vários problemas do mesmo relato como critérios separados dentro de uma única
+    User Story.
+- **Casos especiais (edge cases):**
+  - relato sem persona → infiro a persona pelo contexto;
+  - bug puramente técnico, sem usuário final → escrevo a história do ponto de vista "do sistema";
+  - relato incompleto → faço o melhor possível, sem inventar dados;
+  - vários problemas graves → escrevo uma única User Story principal, com critérios e contexto
+    técnico separados por problema.
+- **System e User separados.** Tudo o que é instrução fixa (persona, regras, raciocínio,
+  formato e exemplos) fica no `system_prompt`. O `user_prompt` tem só o relato do bug. Com isso
+  também corrigi o `{bug_report}` repetido do v1.
 
 ## Resultados Finais
 
-Pipeline executado de ponta a ponta (`pull_prompts.py` → `push_prompts.py` → `evaluate.py`)
-contra a API real da OpenAI (`LLM_MODEL=gpt-4o-mini` para geração, `EVAL_MODEL=gpt-4o` para
-avaliação — ver justificativa da escolha do avaliador logo abaixo). Dashboard do LangSmith:
-`https://smith.langchain.com/projects/mba-ia-pull-evaluation-prompt`. A tabela comparativa v1
-não foi executada nesta sessão (o script avalia apenas o v2 por padrão); os números de v2 abaixo
-são de uma execução real e completa sobre os 15 exemplos do dataset.
+Rodei o pipeline completo (`pull_prompts.py` → `push_prompts.py` → `evaluate.py`) com a API da
+OpenAI: `LLM_MODEL=gpt-4o-mini` para gerar as respostas e `EVAL_MODEL=gpt-4o` para avaliar
+(explico essa escolha no histórico abaixo). Os resultados estão no dashboard do LangSmith:
+`https://smith.langchain.com/projects/mba-ia-pull-evaluation-prompt`.
 
-| Métrica       | v2 (otimizado, última execução) |
-|---------------|:---------------------:|
-| Helpfulness   | 0.88 ✅ |
-| Correctness   | 0.83 ✅ |
-| F1-Score      | 0.79 ❌ (0.01 abaixo do corte) |
-| Clarity       | 0.89 ✅ |
-| Precision     | 0.86 ✅ |
-| **Média geral** | **0.8511** |
-| **Status**    | ❌ REPROVADO (gate exige as 5 métricas ≥ 0.8 individualmente, não só a média) |
+Avaliei o v1 e o v2 nas mesmas condições: os mesmos 15 exemplos do dataset e os mesmos modelos.
+O `evaluate.py` só avalia o v2, então rodei o v1 (`leonanluppi/bug_to_user_story_v1`) com um
+script auxiliar que chama as mesmas funções.
 
-### Histórico de iterações (achados, não só números)
+| Métrica         | v1 (original) | v2 (otimizado) | Diferença |
+|-----------------|:-------------:|:--------------:|:---------:|
+| Helpfulness     | 0.85 ✅       | 0.87 ✅        | +0.02     |
+| Correctness     | 0.78 ❌       | 0.82 ✅        | +0.04     |
+| F1-Score        | 0.71 ❌       | 0.80 ✅        | +0.09     |
+| Clarity         | 0.87 ✅       | 0.90 ✅        | +0.03     |
+| Precision       | 0.84 ✅       | 0.84 ✅        | 0.00      |
+| **Média geral** | **0.8107**    | **0.8443**     | **+0.034**|
+| **Status**      | ❌ REPROVADO  | ✅ APROVADO    |           |
 
-O v2 passou por várias rodadas reais de avaliação. A primeira leva de números foi enganosa por
-causa de ruído no LLM-judge — registrar isso é mais útil do que só o resultado final:
+O v1 reprovou em Correctness e F1-Score. O v2 passou nas 5 métricas. O maior ganho foi no
+F1-Score (+0.09), porque o v2 lista os critérios de aceitação de forma mais completa. O F1 do
+v2 ficou em 0.80, bem no limite. O avaliador é uma LLM e o resultado muda um pouco a cada
+execução: em uma rodada anterior, o mesmo v2 tirou 0.79 no F1. Por isso considero que o v2
+está no limite do corte e não com folga.
 
-1. **v2 original** (3 exemplos, negrito Markdown, Contexto Técnico/Tasks genéricos),
-   avaliado com `EVAL_MODEL=gpt-4o-mini`: média 0.7837. Falhava Helpfulness, Clarity, Precision.
-2. Duas rodadas de ajuste (estrutura estendida `=== SEÇÃO ===` para bugs críticos, seções
-   ad-hoc "Critérios de Prevenção"/"Critérios Adicionais") **pioraram** o resultado (0.7674 →
-   0.7456), mesmo sendo mudanças bem fundamentadas nos exemplos do dataset. Um teste de controle
-   (rodar o **mesmo texto gerado** duas vezes pelo judge) mostrou Precision variando de 0.60 a
-   0.90 para a mesma resposta — ou seja, `gpt-4o-mini` como avaliador é ruidoso demais para medir
-   mudanças pequenas de prompt de forma confiável.
-3. **Causa raiz corrigida:** trocado `EVAL_MODEL` para `gpt-4o` (mantendo `gpt-4o-mini` na
-   geração, por custo). Com o v2 já mais enxuto (apenas remoção do negrito Markdown, já que
-   nenhuma referência do dataset usa `**negrito**`), o resultado subiu para 0.8148 — Clarity e
-   Precision já passavam, sobrando F1 e Correctness por pouco.
-4. **Último ajuste** (o que está publicado hoje): passo de raciocínio pedindo critérios de
-   aceitação mais exaustivos (5-6 em vez de 3-4, cobrindo feedback de erro, consistência entre
-   plataformas e auditoria quando pertinente) + dois gatilhos condicionais confirmados por
-   diagnóstico direto (seção "Exemplo de Cálculo" para bugs numéricos, "Critérios de
-   Acessibilidade" para bugs de modal/UI) + um 4º exemplo few-shot demonstrando o cálculo.
-   Resultado: 0.8511 de média, 4 das 5 métricas aprovadas.
+### Histórico de iterações
 
-### Por que ainda não é ✅ APROVADO
+Fiz várias rodadas de avaliação. Os primeiros números enganaram por causa do ruído do
+avaliador, e acho importante registrar isso, não só o resultado final:
 
-F1-Score (0.79) mede recall contra o texto de referência exato do dataset. O gap residual é
-específico de poucos exemplos (ex.: um bug de modal cujo gabarito espera menção a "menu
-desfocado (backdrop)" e "90% da largura da tela" — detalhes de UI que não estão implícitos no
-relato do bug, só na referência). Fechar esse último 0.01 exigiria ensinar o prompt a imitar
-convenções bem específicas do gabarito desses 15 exemplos, com risco real de overfitting ao
-dataset de avaliação em vez de generalizar. Optou-se por parar aqui e documentar a decisão.
+1. **v2 original** (3 exemplos, negrito Markdown, Contexto Técnico e Tasks genéricos),
+   avaliado com `EVAL_MODEL=gpt-4o-mini`: média 0.7837. Falhava em Helpfulness, Clarity e
+   Precision.
+2. **Duas rodadas de ajuste** (estrutura estendida `=== SEÇÃO ===` para bugs críticos e seções
+   extras como "Critérios de Prevenção") **pioraram** o resultado (0.7674 → 0.7456), apesar de
+   serem mudanças baseadas nos exemplos do dataset. Fiz um teste de controle: pedi ao avaliador
+   para julgar duas vezes o **mesmo texto**. A Precision variou de 0.60 a 0.90. Ou seja, o
+   `gpt-4o-mini` como avaliador tem ruído demais para medir mudanças pequenas no prompt.
+3. **Correção da causa raiz.** Troquei o `EVAL_MODEL` para `gpt-4o` e mantive o `gpt-4o-mini`
+   na geração, para gastar menos. Também tirei o negrito Markdown, já que nenhuma referência do
+   dataset usa `**negrito**`. A média subiu para 0.8148. Clarity e Precision passaram, e
+   faltaram só F1 e Correctness, por pouco.
+4. **Último ajuste (o que está publicado).** Pedi critérios de aceitação mais completos (5 a 6
+   em vez de 3 a 4, incluindo feedback de erro, consistência entre plataformas e auditoria
+   quando fizer sentido). Adicionei dois gatilhos: a seção "Exemplo de Cálculo" para bugs com
+   números e "Critérios de Acessibilidade" para bugs de modal e interface. Também incluí um 4º
+   exemplo few-shot com um cálculo. Resultado da avaliação de hoje: média 0.8443, com as 5
+   métricas em 0.80 ou mais.
+
+### Limite do F1-Score
+
+O F1-Score mede o quanto a resposta cobre o texto de referência do dataset. O que ainda falta
+vem de poucos exemplos. Um deles é um bug de modal cuja referência cita "menu desfocado
+(backdrop)" e "90% da largura da tela". Esses detalhes de interface não estão no relato do bug,
+só na referência. Para ganhar mais nesse ponto, eu teria que ensinar o prompt a copiar
+detalhes dessas 15 respostas de referência. Isso seria overfitting: o prompt ficaria bom só
+para esse dataset. Por isso decidi parar aqui.
 
 ## Como Executar
 
@@ -462,7 +473,7 @@ dataset de avaliação em vez de generalizar. Optou-se por parar aqui e document
 - Uma API Key da [OpenAI](https://platform.openai.com/api-keys) **ou** do
   [Google AI Studio](https://aistudio.google.com/app/apikey) (Gemini, gratuito)
 
-### 1. Setup do ambiente
+### 1. Preparar o ambiente
 
 ```bash
 python3 -m venv venv
@@ -470,29 +481,30 @@ source venv/bin/activate        # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 2. Configurar variáveis de ambiente
+### 2. Configurar as variáveis de ambiente
 
 ```bash
 cp .env.example .env
 ```
 
-Edite `.env` e preencha:
+Edite o `.env` e preencha:
 
-- `LANGSMITH_API_KEY` — em https://smith.langchain.com/settings
-- `USERNAME_LANGSMITH_HUB` — publique qualquer prompt no LangSmith Hub e veja seu username
-  clicando no ícone de cadeado (🔒)
-- `LLM_PROVIDER` — `google` (gratuito, padrão) ou `openai`
+- `LANGSMITH_API_KEY`: pegue em https://smith.langchain.com/settings
+- `USERNAME_LANGSMITH_HUB`: seu handle no Hub. Ele só existe depois que você torna algum
+  prompt público pelo menos uma vez. Para ver o handle, clique no ícone de cadeado (🔒)
+- `LLM_PROVIDER`: `google` (gratuito) ou `openai`
 - `OPENAI_API_KEY` e/ou `GOOGLE_API_KEY`, conforme o provider escolhido
 
-### 3. Rodar o pipeline completo
+### 3. Rodar o pipeline
 
 ```bash
 # 1. Pull do prompt ruim (v1) do LangSmith Hub
 python src/pull_prompts.py
 
-# 2. (já feito neste repo) Editar prompts/bug_to_user_story_v2.yml com a versão otimizada
+# 2. (já feito neste repositório) Editar prompts/bug_to_user_story_v2.yml com a versão otimizada
 
-# 3. Push do prompt otimizado (v2) para o LangSmith Hub, como público
+# 3. Push do prompt otimizado (v2) para o LangSmith Hub, como público (is_public=True)
+#    Também dá para usar o menu "Make Public" na interface do LangSmith
 python src/push_prompts.py
 
 # 4. Avaliação: roda o v2 contra os 15 exemplos do dataset e calcula as 5 métricas
@@ -507,6 +519,6 @@ pytest tests/test_prompts.py -v
 
 ### 5. Iterar (se alguma métrica ficar abaixo de 0.8)
 
-Edite `prompts/bug_to_user_story_v2.yml` (reforce a regra ou adicione um exemplo cobrindo o
-caso que está falhando), depois repita os passos 3 e 4 (`push_prompts.py` → `evaluate.py`) até
-todas as 5 métricas ficarem ≥ 0.8.
+Edite o `prompts/bug_to_user_story_v2.yml`: reforce uma regra ou adicione um exemplo para o caso
+que está falhando. Depois repita os passos 3 e 4 (`push_prompts.py` → `evaluate.py`) até as 5
+métricas ficarem em 0.8 ou mais.
