@@ -314,20 +314,6 @@ por que as escolhi, quais resultados obtive e como rodar o projeto do zero.
 
 ## Técnicas Aplicadas (Fase 2)
 
-### O que havia de errado no prompt v1
-
-Ao ler o `prompts/bug_to_user_story_v1.yml` (puxado de `leonanluppi/bug_to_user_story_v1`),
-encontrei estes problemas:
-
-- **Sem persona.** O modelo não sabe para quem escreve nem qual qualidade se espera.
-- **`{bug_report}` repetido** no `system_prompt` e no `user_prompt`, o que confunde.
-- **Sem formato de saída.** Cada resposta vinha com uma estrutura diferente.
-- **Sem exemplos.** O modelo não sabia o nível de detalhe nem o tom esperados.
-- **Sem regra para informação faltante.** Quando o relato era incompleto, o modelo inventava
-  dados, o que derruba as métricas Precision e Correctness.
-- **Sem adaptação ao tamanho do bug.** O dataset (`datasets/bug_to_user_story.jsonl`) tem bugs
-  simples, médios e complexos, e as respostas de referência ficam mais detalhadas conforme o
-  bug fica mais complexo. O v1 não orientava isso.
 
 ### Técnicas que escolhi para o v2
 
@@ -455,14 +441,7 @@ avaliador, e acho importante registrar isso, não só o resultado final:
    exemplo few-shot com um cálculo. Resultado da avaliação de hoje: média 0.8443, com as 5
    métricas em 0.80 ou mais.
 
-### Limite do F1-Score
 
-O F1-Score mede o quanto a resposta cobre o texto de referência do dataset. O que ainda falta
-vem de poucos exemplos. Um deles é um bug de modal cuja referência cita "menu desfocado
-(backdrop)" e "90% da largura da tela". Esses detalhes de interface não estão no relato do bug,
-só na referência. Para ganhar mais nesse ponto, eu teria que ensinar o prompt a copiar
-detalhes dessas 15 respostas de referência. Isso seria overfitting: o prompt ficaria bom só
-para esse dataset. Por isso decidi parar aqui.
 
 ## Como Executar
 
