@@ -12,7 +12,7 @@ Você deve entregar um software capaz de:
 
 ## Exemplo no CLI
 
-Exemplo de prompt RUIM (v1) — apenas ilustrativo, para você entender o ponto de partida:
+Exemplo de prompt RUIM (v1) - apenas ilustrativo, para você entender o ponto de partida:
 
 ```
 ==================================================
@@ -20,19 +20,19 @@ Prompt: {seu_username}/bug_to_user_story_v1
 ==================================================
 
 Métricas Derivadas:
-  - Helpfulness: 0.45 ✗
-  - Correctness: 0.52 ✗
+  - Helpfulness: 0.45 X
+  - Correctness: 0.52 X
 
 Métricas Base:
-  - F1-Score: 0.48 ✗
-  - Clarity: 0.50 ✗
-  - Precision: 0.46 ✗
+  - F1-Score: 0.48 X
+  - Clarity: 0.50 X
+  - Precision: 0.46 X
 
-❌ STATUS: REPROVADO
-⚠️  Métricas abaixo de 0.8: helpfulness, correctness, f1_score, clarity, precision
+X STATUS: REPROVADO
+!  Métricas abaixo de 0.8: helpfulness, correctness, f1_score, clarity, precision
 ```
 
-Exemplo de prompt OTIMIZADO (v2) — seu objetivo é chegar aqui:
+Exemplo de prompt OTIMIZADO (v2) - seu objetivo é chegar aqui:
 
 ```
 # Após refatorar os prompts e fazer push
@@ -47,15 +47,15 @@ Prompt: {seu_username}/bug_to_user_story_v2
 ==================================================
 
 Métricas Derivadas:
-  - Helpfulness: 0.94 ✓
-  - Correctness: 0.96 ✓
+  - Helpfulness: 0.94 OK
+  - Correctness: 0.96 OK
 
 Métricas Base:
-  - F1-Score: 0.93 ✓
-  - Clarity: 0.95 ✓
-  - Precision: 0.92 ✓
+  - F1-Score: 0.93 OK
+  - Clarity: 0.95 OK
+  - Precision: 0.92 OK
 
-✅ STATUS: APROVADO - Todas as métricas >= 0.8
+OK STATUS: APROVADO - Todas as métricas >= 0.8
 ```
 
 ## Tecnologias obrigatórias
@@ -126,7 +126,7 @@ Requisitos do prompt otimizado:
 
 - Deve conter instruções claras e específicas
 - Deve incluir regras explícitas de comportamento
-- Deve ter exemplos de entrada/saída (Few-shot) — obrigatório
+- Deve ter exemplos de entrada/saída (Few-shot) - obrigatório
 - Deve incluir tratamento de edge cases
 - Deve usar System vs User Prompt adequadamente
 
@@ -187,42 +187,42 @@ Faça um fork do repositório base: https://github.com/devfullcycle/mba-ia-pull-
 
 ```
 mba-ia-pull-evaluation-prompt/
-├── .env.example              # Template das variáveis de ambiente
-├── requirements.txt          # Dependências Python
-├── README.md                 # Sua documentação do processo
-│
-├── prompts/
-│   ├── bug_to_user_story_v1.yml  # Prompt inicial (já incluso)
-│   └── bug_to_user_story_v2.yml  # Seu prompt otimizado (criar)
-│
-├── datasets/
-│   └── bug_to_user_story.jsonl   # 15 exemplos de bugs (já incluso)
-│
-├── src/
-│   ├── pull_prompts.py       # Pull do LangSmith (implementar)
-│   ├── push_prompts.py       # Push ao LangSmith (implementar)
-│   ├── evaluate.py           # Avaliação automática (pronto)
-│   ├── metrics.py            # 5 métricas implementadas (pronto)
-│   └── utils.py              # Funções auxiliares (pronto)
-│
-├── tests/
-│   └── test_prompts.py       # Testes de validação (implementar)
+|-- .env.example              # Template das variáveis de ambiente
+|-- requirements.txt          # Dependências Python
+|-- README.md                 # Sua documentação do processo
+|
+|-- prompts/
+|   |-- bug_to_user_story_v1.yml  # Prompt inicial (já incluso)
+|   `-- bug_to_user_story_v2.yml  # Seu prompt otimizado (criar)
+|
+|-- datasets/
+|   `-- bug_to_user_story.jsonl   # 15 exemplos de bugs (já incluso)
+|
+|-- src/
+|   |-- pull_prompts.py       # Pull do LangSmith (implementar)
+|   |-- push_prompts.py       # Push ao LangSmith (implementar)
+|   |-- evaluate.py           # Avaliação automática (pronto)
+|   |-- metrics.py            # 5 métricas implementadas (pronto)
+|   `-- utils.py              # Funções auxiliares (pronto)
+|
+|-- tests/
+|   `-- test_prompts.py       # Testes de validação (implementar)
 ```
 
 O que você deve implementar:
 
-- prompts/bug_to_user_story_v2.yml — Criar do zero com seu prompt otimizado
-- src/pull_prompts.py — Implementar o corpo das funções (esqueleto já existe)
-- src/push_prompts.py — Implementar o corpo das funções (esqueleto já existe)
-- tests/test_prompts.py — Implementar os 6 testes de validação (esqueleto já existe)
-- README.md — Documentar seu processo de otimização
+- prompts/bug_to_user_story_v2.yml - Criar do zero com seu prompt otimizado
+- src/pull_prompts.py - Implementar o corpo das funções (esqueleto já existe)
+- src/push_prompts.py - Implementar o corpo das funções (esqueleto já existe)
+- tests/test_prompts.py - Implementar os 6 testes de validação (esqueleto já existe)
+- README.md - Documentar seu processo de otimização
 
 O que já vem pronto (não alterar):
 
-- src/evaluate.py — Script de avaliação completo
-- src/metrics.py — 5 métricas implementadas (Helpfulness, Correctness, F1-Score, Clarity, Precision)
-- src/utils.py — Funções auxiliares
-- datasets/bug_to_user_story.jsonl — Dataset com 15 bugs (5 simples, 7 médios, 3 complexos)
+- src/evaluate.py - Script de avaliação completo
+- src/metrics.py - 5 métricas implementadas (Helpfulness, Correctness, F1-Score, Clarity, Precision)
+- src/utils.py - Funções auxiliares
+- datasets/bug_to_user_story.jsonl - Dataset com 15 bugs (5 simples, 7 médios, 3 complexos)
 - Suporte multi-provider (OpenAI e Gemini)
 
 ## VirtualEnv para Python
@@ -292,7 +292,7 @@ C) Seção "Como Executar":
 - Link público (ou screenshots) do dashboard do LangSmith
 - Devem estar visíveis:
   - Dataset de avaliação com 15 exemplos
-  - Execuções dos prompts v2 (otimizados) com notas ≥ 0.8
+  - Execuções dos prompts v2 (otimizados) com notas >= 0.8
   - Tracing detalhado de pelo menos 3 exemplos
 
 ## Dicas Finais
@@ -395,10 +395,10 @@ Além das técnicas, o v2 tem:
   - tratar vários problemas do mesmo relato como critérios separados dentro de uma única
     User Story.
 - **Casos especiais (edge cases):**
-  - relato sem persona → infiro a persona pelo contexto;
-  - bug puramente técnico, sem usuário final → escrevo a história do ponto de vista "do sistema";
-  - relato incompleto → faço o melhor possível, sem inventar dados;
-  - vários problemas graves → escrevo uma única User Story principal, com critérios e contexto
+  - relato sem persona -> infiro a persona pelo contexto;
+  - bug puramente técnico, sem usuário final -> escrevo a história do ponto de vista "do sistema";
+  - relato incompleto -> faço o melhor possível, sem inventar dados;
+  - vários problemas graves -> escrevo uma única User Story principal, com critérios e contexto
     técnico separados por problema.
 - **System e User separados.** Tudo o que é instrução fixa (persona, regras, raciocínio,
   formato e exemplos) fica no `system_prompt`. O `user_prompt` tem só o relato do bug. Com isso
@@ -406,7 +406,7 @@ Além das técnicas, o v2 tem:
 
 ## Resultados Finais
 
-Rodei o pipeline completo (`pull_prompts.py` → `push_prompts.py` → `evaluate.py`) com a API da
+Rodei o pipeline completo (`pull_prompts.py` -> `push_prompts.py` -> `evaluate.py`) com a API da
 OpenAI: `LLM_MODEL=gpt-4o-mini` para gerar as respostas e `EVAL_MODEL=gpt-4o` para avaliar
 (explico essa escolha no histórico abaixo). Os resultados estão no dashboard do LangSmith:
 `https://smith.langchain.com/projects/mba-ia-pull-evaluation-prompt`.
@@ -417,13 +417,13 @@ script auxiliar que chama as mesmas funções.
 
 | Métrica         | v1 (original) | v2 (otimizado) | Diferença |
 |-----------------|:-------------:|:--------------:|:---------:|
-| Helpfulness     | 0.85 ✅       | 0.87 ✅        | +0.02     |
-| Correctness     | 0.78 ❌       | 0.82 ✅        | +0.04     |
-| F1-Score        | 0.71 ❌       | 0.80 ✅        | +0.09     |
-| Clarity         | 0.87 ✅       | 0.90 ✅        | +0.03     |
-| Precision       | 0.84 ✅       | 0.84 ✅        | 0.00      |
+| Helpfulness     | 0.85 OK       | 0.87 OK        | +0.02     |
+| Correctness     | 0.78 X       | 0.82 OK        | +0.04     |
+| F1-Score        | 0.71 X       | 0.80 OK        | +0.09     |
+| Clarity         | 0.87 OK       | 0.90 OK        | +0.03     |
+| Precision       | 0.84 OK       | 0.84 OK        | 0.00      |
 | **Média geral** | **0.8107**    | **0.8443**     | **+0.034**|
-| **Status**      | ❌ REPROVADO  | ✅ APROVADO    |           |
+| **Status**      | REPROVADO  | APROVADO    |           |
 
 O v1 reprovou em Correctness e F1-Score. O v2 passou nas 5 métricas. O maior ganho foi no
 F1-Score (+0.09), porque o v2 lista os critérios de aceitação de forma mais completa. O F1 do
@@ -440,7 +440,7 @@ avaliador, e acho importante registrar isso, não só o resultado final:
    avaliado com `EVAL_MODEL=gpt-4o-mini`: média 0.7837. Falhava em Helpfulness, Clarity e
    Precision.
 2. **Duas rodadas de ajuste** (estrutura estendida `=== SEÇÃO ===` para bugs críticos e seções
-   extras como "Critérios de Prevenção") **pioraram** o resultado (0.7674 → 0.7456), apesar de
+   extras como "Critérios de Prevenção") **pioraram** o resultado (0.7674 -> 0.7456), apesar de
    serem mudanças baseadas nos exemplos do dataset. Fiz um teste de controle: pedi ao avaliador
    para julgar duas vezes o **mesmo texto**. A Precision variou de 0.60 a 0.90. Ou seja, o
    `gpt-4o-mini` como avaliador tem ruído demais para medir mudanças pequenas no prompt.
@@ -491,7 +491,7 @@ Edite o `.env` e preencha:
 
 - `LANGSMITH_API_KEY`: pegue em https://smith.langchain.com/settings
 - `USERNAME_LANGSMITH_HUB`: seu handle no Hub. Ele só existe depois que você torna algum
-  prompt público pelo menos uma vez. Para ver o handle, clique no ícone de cadeado (🔒)
+  prompt público pelo menos uma vez. Para ver o handle, clique no ícone de cadeado
 - `LLM_PROVIDER`: `google` (gratuito) ou `openai`
 - `OPENAI_API_KEY` e/ou `GOOGLE_API_KEY`, conforme o provider escolhido
 
@@ -520,5 +520,5 @@ pytest tests/test_prompts.py -v
 ### 5. Iterar (se alguma métrica ficar abaixo de 0.8)
 
 Edite o `prompts/bug_to_user_story_v2.yml`: reforce uma regra ou adicione um exemplo para o caso
-que está falhando. Depois repita os passos 3 e 4 (`push_prompts.py` → `evaluate.py`) até as 5
+que está falhando. Depois repita os passos 3 e 4 (`push_prompts.py` -> `evaluate.py`) até as 5
 métricas ficarem em 0.8 ou mais.
