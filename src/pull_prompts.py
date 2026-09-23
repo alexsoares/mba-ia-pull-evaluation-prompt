@@ -6,6 +6,9 @@ Este script:
 2. Faz pull dos prompts do Hub
 3. Salva localmente em prompts/bug_to_user_story_v1.yml
 
+O pull é feito pelo cliente do LangSmith (Client().pull_prompt). O módulo
+`langchain.hub` deixou de existir a partir do LangChain 1.x.
+
 SIMPLIFICADO: Usa serialização nativa do LangChain para extrair prompts.
 """
 
@@ -14,7 +17,7 @@ import sys
 from datetime import date
 from pathlib import Path
 from dotenv import load_dotenv
-from langchain import hub
+from langsmith import Client
 from langchain_core.prompts import SystemMessagePromptTemplate, HumanMessagePromptTemplate
 from utils import save_yaml, check_env_vars, print_section_header
 
@@ -36,7 +39,12 @@ def pull_prompts_from_langsmith():
     print(f"Conectando ao LangSmith Hub...")
     print(f"Puxando prompt: {PROMPT_NAME}")
 
-    prompt = hub.pull(PROMPT_NAME)
+    client = Client()
+
+    # dangerously_pull_public_prompt=True é obrigatório quando o identificador tem
+    # dono explícito ("owner/nome"): o prompt do Hub é um objeto LangChain
+    # serializado de terceiros. Aqui é o prompt semente do desafio, risco conhecido.
+    prompt = client.pull_prompt(PROMPT_NAME, dangerously_pull_public_prompt=True)
 
     system_prompt = ""
     user_prompt = ""

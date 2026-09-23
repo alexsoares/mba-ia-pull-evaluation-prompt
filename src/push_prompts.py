@@ -7,13 +7,16 @@ Este script:
 3. Faz push PÚBLICO para o LangSmith Hub
 4. Adiciona metadados (tags, descrição, técnicas utilizadas)
 
+O push é feito pelo cliente do LangSmith (Client().push_prompt). O módulo
+`langchain.hub` deixou de existir a partir do LangChain 1.x.
+
 SIMPLIFICADO: Código mais limpo e direto ao ponto.
 """
 
 import os
 import sys
 from dotenv import load_dotenv
-from langchain import hub
+from langsmith import Client
 from langchain_core.prompts import ChatPromptTemplate
 from utils import load_yaml, check_env_vars, print_section_header, validate_prompt_structure
 
@@ -52,21 +55,27 @@ def push_prompt_to_langsmith(prompt_name: str, prompt_data: dict) -> bool:
         readme = "\n".join(readme_lines)
 
         print(f"   Publicando '{prompt_name}' (público)...")
-        hub.push(
+        client = Client()
+        url = client.push_prompt(
             prompt_name,
-            prompt_template,
-            new_repo_description=description,
-            new_repo_is_public=True,
+            object=prompt_template,
+            is_public=True,
+            description=description,
             tags=tags,
             readme=readme,
         )
 
-        print(f"   ✓ Push concluído")
+        print(f"   ✓ Push concluído: {url}")
         print(f"   Tags: {tags}")
         print(f"   Técnicas: {', '.join(techniques) if techniques else 'nenhuma listada'}")
         return True
 
     except Exception as e:
+        # O LangSmith responde 409 quando o conteúdo é idêntico ao último commit
+        if "Nothing to commit" in str(e):
+            print(f"   ✓ Prompt já está atualizado no Hub (nenhuma alteração desde o último commit)")
+            return True
+
         print(f"   ❌ Erro ao fazer push do prompt '{prompt_name}': {e}")
         return False
 

@@ -12,7 +12,7 @@ Você deve entregar um software capaz de:
 
 ## Exemplo no CLI
 
-Exemplo de prompt RUIM (v1) - apenas ilustrativo, para você entender o ponto de partida:
+Exemplo de prompt RUIM (v1) — apenas ilustrativo, para você entender o ponto de partida:
 
 ```
 ==================================================
@@ -20,19 +20,19 @@ Prompt: {seu_username}/bug_to_user_story_v1
 ==================================================
 
 Métricas Derivadas:
-  - Helpfulness: 0.45 X
-  - Correctness: 0.52 X
+  - Helpfulness: 0.45 ✗
+  - Correctness: 0.52 ✗
 
 Métricas Base:
-  - F1-Score: 0.48 X
-  - Clarity: 0.50 X
-  - Precision: 0.46 X
+  - F1-Score: 0.48 ✗
+  - Clarity: 0.50 ✗
+  - Precision: 0.46 ✗
 
-X STATUS: REPROVADO
-!  Métricas abaixo de 0.8: helpfulness, correctness, f1_score, clarity, precision
+❌ STATUS: REPROVADO
+⚠️  Métricas abaixo de 0.8: helpfulness, correctness, f1_score, clarity, precision
 ```
 
-Exemplo de prompt OTIMIZADO (v2) - seu objetivo é chegar aqui:
+Exemplo de prompt OTIMIZADO (v2) — seu objetivo é chegar aqui:
 
 ```
 # Após refatorar os prompts e fazer push
@@ -47,20 +47,24 @@ Prompt: {seu_username}/bug_to_user_story_v2
 ==================================================
 
 Métricas Derivadas:
-  - Helpfulness: 0.94 OK
-  - Correctness: 0.96 OK
+  - Helpfulness: 0.94 ✓
+  - Correctness: 0.96 ✓
 
 Métricas Base:
-  - F1-Score: 0.93 OK
-  - Clarity: 0.95 OK
-  - Precision: 0.92 OK
+  - F1-Score: 0.93 ✓
+  - Clarity: 0.95 ✓
+  - Precision: 0.92 ✓
 
-OK STATUS: APROVADO - Todas as métricas >= 0.8
+✅ STATUS: APROVADO - Todas as métricas >= 0.8
+
+Resultados no LangSmith (notas gravadas como feedback no experimento):
+  {seu_username}/bug_to_user_story_v2
+    https://smith.langchain.com/o/.../datasets/.../compare?selectedSessions=...
 ```
 
 ## Tecnologias obrigatórias
 
-- Linguagem: Python 3.9+
+- Linguagem: Python 3.10+
 - Framework: LangChain
 - Plataforma de avaliação: LangSmith
 - Gestão de prompts: LangSmith Prompt Hub
@@ -69,9 +73,8 @@ OK STATUS: APROVADO - Todas as métricas >= 0.8
 ## Pacotes recomendados
 
 ```python
-from langchain import hub  # Pull e Push de prompts
-from langsmith import Client  # Interação com LangSmith API
-from langsmith.evaluation import evaluate  # Avaliação de prompts
+from langsmith import Client  # Pull/push de prompts, datasets e avaliação
+from langchain_core.prompts import ChatPromptTemplate  # Montagem dos prompts
 from langchain_openai import ChatOpenAI  # LLM OpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI  # LLM Gemini
 ```
@@ -92,6 +95,25 @@ from langchain_google_genai import ChatGoogleGenerativeAI  # LLM Gemini
 
 Este desafio não fixa modelos. Nomes e versões mudam com frequência e alguns são descontinuados, então faz parte do desafio consultar a documentação oficial do provedor que você escolher, ver quais modelos estão disponíveis no momento e selecionar os que atendem ao objetivo. Você pode usar o mesmo modelo para responder e para avaliar, ou um modelo mais capaz na avaliação.
 
+## Handle do LangSmith Hub (seu username)
+
+O LangSmith identifica os prompts que você publica por um **handle público**, no
+formato `handle/nome_do_prompt`. Esse handle é o valor que vai em
+`USERNAME_LANGSMITH_HUB` no `.env`.
+
+Ele **não existe por padrão**: é criado no momento em que você torna um prompt
+público pela primeira vez. Por isso, faça esta etapa antes de tentar o push:
+
+1. Abra o LangSmith e vá em **Prompts**
+2. Crie um prompt qualquer (pode ser de teste) ou abra um que você já tenha
+3. Clique nos **três pontinhos** no canto superior direito, ao lado do botão **Playground**
+4. Escolha **Make Public**
+5. Na tela **Choose your public handle**, defina o seu handle
+
+O handle é **definitivo** depois de confirmado, então escolha com calma. Feito
+isso, ele aparece no endereço do prompt (`handle/nome_do_prompt`) e é esse valor
+que você coloca no `.env`.
+
 ## Requisitos
 
 ### 1. Pull do Prompt inicial do LangSmith
@@ -100,11 +122,17 @@ O repositório base já contém prompts de baixa qualidade publicados no LangSmi
 
 Tarefas:
 
+- Criar seu handle do LangSmith Hub (ver a seção "Handle do LangSmith Hub" acima)
 - Configurar suas credenciais do LangSmith no arquivo .env (conforme o arquivo .env.example)
 - Implementar o script src/pull_prompts.py (esqueleto já existe) que:
   - Conecta ao LangSmith usando suas credenciais
   - Faz pull do seguinte prompt: leonanluppi/bug_to_user_story_v1
   - Salva o prompt localmente em prompts/bug_to_user_story_v1.yml
+
+Atenção: o LangSmith bloqueia por padrão o pull de prompts identificados por
+`owner/nome`, porque um prompt do Hub é um objeto LangChain serializado e pode vir
+de terceiros. Para o prompt semente do desafio, passe `dangerously_pull_public_prompt=True`
+no `client.pull_prompt(...)`.
 
 ### 2. Otimização do Prompt
 
@@ -126,7 +154,7 @@ Requisitos do prompt otimizado:
 
 - Deve conter instruções claras e específicas
 - Deve incluir regras explícitas de comportamento
-- Deve ter exemplos de entrada/saída (Few-shot) - obrigatório
+- Deve ter exemplos de entrada/saída (Few-shot) — obrigatório
 - Deve incluir tratamento de edge cases
 - Deve usar System vs User Prompt adequadamente
 
@@ -141,7 +169,10 @@ Tarefas:
   - Faz push para o LangSmith com nomes versionados: {seu_username}/bug_to_user_story_v2
   - Adiciona metadados (tags, descrição, técnicas utilizadas)
 - Executar o script e verificar no dashboard do LangSmith se os prompts foram publicados
-- Deixá-lo público
+- Deixá-lo público (`is_public=True` no push, ou pelo menu "Make Public" na interface)
+
+Lembre-se de que `{seu_username}` é o handle do Hub, e ele só existe depois de você
+ter tornado algum prompt público pelo menos uma vez.
 
 ### 4. Iteração
 
@@ -150,6 +181,11 @@ Espera-se 3-5 iterações.
 - Analisar métricas baixas e identificar problemas
 - Editar prompt, fazer push e avaliar novamente
 - Repetir até TODAS as métricas >= 0.8
+
+Cada execução do `src/evaluate.py` cria um **experimento** no LangSmith, ligado ao
+dataset de avaliação. As 5 notas são gravadas como feedback em cada exemplo, o que
+permite comparar suas iterações lado a lado no dashboard. Ao final, o script imprime
+o link direto do experimento.
 
 ```
 Critério de Aprovação:
@@ -187,42 +223,42 @@ Faça um fork do repositório base: https://github.com/devfullcycle/mba-ia-pull-
 
 ```
 mba-ia-pull-evaluation-prompt/
-|-- .env.example              # Template das variáveis de ambiente
-|-- requirements.txt          # Dependências Python
-|-- README.md                 # Sua documentação do processo
-|
-|-- prompts/
-|   |-- bug_to_user_story_v1.yml  # Prompt inicial (já incluso)
-|   `-- bug_to_user_story_v2.yml  # Seu prompt otimizado (criar)
-|
-|-- datasets/
-|   `-- bug_to_user_story.jsonl   # 15 exemplos de bugs (já incluso)
-|
-|-- src/
-|   |-- pull_prompts.py       # Pull do LangSmith (implementar)
-|   |-- push_prompts.py       # Push ao LangSmith (implementar)
-|   |-- evaluate.py           # Avaliação automática (pronto)
-|   |-- metrics.py            # 5 métricas implementadas (pronto)
-|   `-- utils.py              # Funções auxiliares (pronto)
-|
-|-- tests/
-|   `-- test_prompts.py       # Testes de validação (implementar)
+├── .env.example              # Template das variáveis de ambiente
+├── requirements.txt          # Dependências Python
+├── README.md                 # Sua documentação do processo
+│
+├── prompts/
+│   ├── bug_to_user_story_v1.yml  # Prompt inicial (já incluso)
+│   └── bug_to_user_story_v2.yml  # Seu prompt otimizado (criar)
+│
+├── datasets/
+│   └── bug_to_user_story.jsonl   # 15 exemplos de bugs (já incluso)
+│
+├── src/
+│   ├── pull_prompts.py       # Pull do LangSmith (implementar)
+│   ├── push_prompts.py       # Push ao LangSmith (implementar)
+│   ├── evaluate.py           # Avaliação automática (pronto)
+│   ├── metrics.py            # 5 métricas implementadas (pronto)
+│   └── utils.py              # Funções auxiliares (pronto)
+│
+├── tests/
+│   └── test_prompts.py       # Testes de validação (implementar)
 ```
 
 O que você deve implementar:
 
-- prompts/bug_to_user_story_v2.yml - Criar do zero com seu prompt otimizado
-- src/pull_prompts.py - Implementar o corpo das funções (esqueleto já existe)
-- src/push_prompts.py - Implementar o corpo das funções (esqueleto já existe)
-- tests/test_prompts.py - Implementar os 6 testes de validação (esqueleto já existe)
-- README.md - Documentar seu processo de otimização
+- prompts/bug_to_user_story_v2.yml — Criar do zero com seu prompt otimizado
+- src/pull_prompts.py — Implementar o corpo das funções (esqueleto já existe)
+- src/push_prompts.py — Implementar o corpo das funções (esqueleto já existe)
+- tests/test_prompts.py — Implementar os 6 testes de validação (esqueleto já existe)
+- README.md — Documentar seu processo de otimização
 
 O que já vem pronto (não alterar):
 
-- src/evaluate.py - Script de avaliação completo
-- src/metrics.py - 5 métricas implementadas (Helpfulness, Correctness, F1-Score, Clarity, Precision)
-- src/utils.py - Funções auxiliares
-- datasets/bug_to_user_story.jsonl - Dataset com 15 bugs (5 simples, 7 médios, 3 complexos)
+- src/evaluate.py — Script de avaliação completo (cria o experimento no LangSmith e grava as notas como feedback)
+- src/metrics.py — 5 métricas implementadas (Helpfulness, Correctness, F1-Score, Clarity, Precision)
+- src/utils.py — Funções auxiliares
+- datasets/bug_to_user_story.jsonl — Dataset com 15 bugs (5 simples, 7 médios, 3 complexos)
 - Suporte multi-provider (OpenAI e Gemini)
 
 ## VirtualEnv para Python
@@ -277,9 +313,9 @@ A) Seção "Técnicas Aplicadas (Fase 2)":
 
 B) Seção "Resultados Finais":
 
-- Link público do seu dashboard do LangSmith mostrando as avaliações
+- Link público do dataset de avaliação, com os experimentos (ver "Evidências no LangSmith")
 - Screenshots das avaliações com as notas mínimas de 0.8 atingidas
-- Tabela comparativa: prompts ruins (v1) vs prompts otimizados (v2)
+- Comparação entre o prompt original (v1) e o seu otimizado (v2): o que mudou e por quê
 
 C) Seção "Como Executar":
 
@@ -289,11 +325,23 @@ C) Seção "Como Executar":
 
 3. Evidências no LangSmith:
 
-- Link público (ou screenshots) do dashboard do LangSmith
+- Link público do dataset de avaliação (ou screenshots do dashboard)
 - Devem estar visíveis:
   - Dataset de avaliação com 15 exemplos
-  - Execuções dos prompts v2 (otimizados) com notas >= 0.8
+  - Execuções dos prompts v2 (otimizados) com notas ≥ 0.8
   - Tracing detalhado de pelo menos 3 exemplos
+
+O link que o `src/evaluate.py` imprime ao final só abre para quem tem acesso ao seu
+workspace. Para gerar um endereço que qualquer pessoa consiga abrir, compartilhe o
+dataset de avaliação — ele expõe junto os experimentos rodados contra ele:
+
+```python
+from langsmith import Client
+
+print(Client().share_dataset(dataset_name="<seu LANGSMITH_PROJECT>-eval")["url"])
+```
+
+Rode uma vez e guarde o endereço: ao compartilhar de novo, o link muda.
 
 ## Dicas Finais
 
@@ -394,8 +442,10 @@ Além das técnicas, o v2 tem:
 
 Rodei o pipeline completo (`pull_prompts.py` -> `push_prompts.py` -> `evaluate.py`) com a API da
 OpenAI: `LLM_MODEL=gpt-4o-mini` para gerar as respostas e `EVAL_MODEL=gpt-4o` para avaliar
-(explico essa escolha no histórico abaixo). Os resultados estão no dashboard do LangSmith:
-`https://smith.langchain.com/projects/mba-ia-pull-evaluation-prompt`.
+(explico essa escolha no histórico abaixo).
+
+Link público do dataset de avaliação, com os experimentos rodados contra ele:
+https://smith.langchain.com/public/c044b2c9-c0cc-4b4a-8b63-02fc3c7dd0de/d
 
 Avaliei o v1 e o v2 nas mesmas condições: os mesmos 15 exemplos do dataset e os mesmos modelos.
 O `evaluate.py` só avalia o v2, então rodei o v1 (`leonanluppi/bug_to_user_story_v1`) com um
@@ -440,6 +490,12 @@ avaliador, e acho importante registrar isso, não só o resultado final:
    números e "Critérios de Acessibilidade" para bugs de modal e interface. Também incluí um 4º
    exemplo few-shot com um cálculo. Resultado da avaliação de hoje: média 0.8443, com as 5
    métricas em 0.80 ou mais.
+5. **Migração para o template atual.** Troquei `langchain.hub` (LangChain 0.3) por
+   `Client().pull_prompt` / `Client().push_prompt` e passei a avaliar com `client.evaluate`,
+   que grava cada rodada como experimento no dataset. Com o mesmo prompt v2, a primeira rodada
+   deu F1 0.7987 (reprovado por 0.0013) e a segunda deu média 0.8605, com F1 0.81, Clarity
+   0.90, Precision 0.87, Helpfulness 0.89 e Correctness 0.84. As duas rodadas estão no link
+   público acima. Isso confirma o que escrevi acima: o F1 do v2 fica no limite do corte.
 
 
 
@@ -447,7 +503,7 @@ avaliador, e acho importante registrar isso, não só o resultado final:
 
 ### Pré-requisitos
 
-- Python 3.9+
+- Python 3.10+ (as versões atuais de `langchain-core` e `langsmith` não suportam 3.9)
 - Uma conta no [LangSmith](https://smith.langchain.com) com API Key
 - Uma API Key da [OpenAI](https://platform.openai.com/api-keys) **ou** do
   [Google AI Studio](https://aistudio.google.com/app/apikey) (Gemini, gratuito)
@@ -471,7 +527,9 @@ Edite o `.env` e preencha:
 - `LANGSMITH_API_KEY`: pegue em https://smith.langchain.com/settings
 - `USERNAME_LANGSMITH_HUB`: seu handle no Hub. Ele só existe depois que você torna algum
   prompt público pelo menos uma vez. Para ver o handle, clique no ícone de cadeado
+- `LANGSMITH_PROJECT`: nome do projeto; também forma o nome do dataset (`{LANGSMITH_PROJECT}-eval`)
 - `LLM_PROVIDER`: `google` (gratuito) ou `openai`
+- `LLM_MODEL` e `EVAL_MODEL`: modelo que gera e modelo que avalia (usei `gpt-4o-mini` e `gpt-4o`)
 - `OPENAI_API_KEY` e/ou `GOOGLE_API_KEY`, conforme o provider escolhido
 
 ### 3. Rodar o pipeline
